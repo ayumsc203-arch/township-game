@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Township 2D Canvas Game 🏡</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  
+  <div class="game-overlay"></div>
+  
+  <div class="game-container">
+    
+    <!-- 1. TOP HUD -->
+    <header class="header-hud">
+      <div class="hud-left">
+        <div class="level-badge" id="hud-xp-badge">
+          <span id="hud-level">1</span>
+        </div>
+        <div class="xp-container">
+          <div class="xp-header">
+            <span>TOWN PROGRESS</span>
+            <span id="hud-xp-text">0/100 XP</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="xp-progress-bar" id="hud-xp-bar"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="hud-center">
+        <h1 style="font-size: 20px; color: #2c5282;">Township 2D Game 🏡</h1>
+      </div>
+      
+      <div class="hud-right">
+        <div class="resource-pill coins" id="hud-coins-badge" onclick="alert('Complete Helicopter orders or fill Trains to get more gold!')">
+          <span>🪙</span>
+          <span id="hud-coins">200</span>
+        </div>
+        <div class="resource-pill barn-pill" id="hud-barn-pill" onclick="toggleBarn()">
+          <span>📦 BARN</span>
+          <span id="hud-barn-capacity">0/40</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. FULLSCREEN INTERACTIVE CANVAS -->
+    <div style="position: relative; flex-grow: 1; overflow: hidden; border-radius: 16px; border: 2px solid rgba(255,255,255,0.4); box-shadow: var(--glass-shadow);">
+      <canvas id="gameCanvas"></canvas>
+      
+      <!-- Toggle Sound Synth Button -->
+      <button id="sound-toggle-btn" class="unlock-btn" style="position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.85); color: #2d3748; padding: 6px 12px; z-index: 10;">
+        🔊 Sound On
+      </button>
+
+      <!-- Active Factory Action Overlay (Fired when clicking a factory on the map) -->
+      <div id="factory-action-modal" class="factory-menu-overlay" style="display: none;">
+        <div class="factory-menu-content">
+          <div class="factory-menu-header">
+            <h3 id="factory-menu-title">Factory Title</h3>
+            <button class="close-menu-btn" onclick="closeFactoryModal()">&times;</button>
+          </div>
+          <div style="display: flex; gap: 15px; margin-bottom: 12px; align-items: center;">
+            <div style="display: flex; gap: 8px;" id="factory-menu-queue">
+              <!-- Queue slots -->
+            </div>
+            <div class="factory-collector-slot" id="factory-menu-collector" onclick="collectActiveFactory()" style="display: none;">
+              <!-- Collected outputs -->
+            </div>
+          </div>
+          <div class="factory-recipes" id="factory-menu-recipes">
+            <!-- Recipes options list -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. BOTTOM ACTION TOOLBAR -->
+    <footer class="game-toolbar-dock">
+      <button class="tool-btn active" id="tool-select" data-tool="select" title="Move & Select Buildings">
+        <span class="tool-icon">🖱️</span>
+        <span class="tool-label">Select</span>
+      </button>
+      
+      <div class="toolbar-divider"></div>
+      
+      <button class="tool-btn" id="tool-sickle" data-tool="sickle" title="Swipe over crops to harvest">
+        <span class="tool-icon">✂️</span>
+        <span class="tool-label">Harvest</span>
+      </button>
+      
+      <button class="tool-btn" id="tool-seed-wheat" data-tool="seed_wheat" title="Swipe to plant Wheat">
+        <span class="tool-icon">🌾</span>
+        <span class="tool-label">Wheat</span>
+      </button>
+      
+      <button class="tool-btn" id="tool-seed-corn" data-tool="seed_corn" title="Swipe to plant Corn">
+        <span class="tool-icon">🌽</span>
+        <span class="tool-label">Corn</span>
+      </button>
+      
+      <button class="tool-btn" id="tool-seed-carrot" data-tool="seed_carrot" title="Swipe to plant Carrots">
+        <span class="tool-icon">🥕</span>
+        <span class="tool-label">Carrot</span>
+      </button>
+      
+      <button class="tool-btn" id="tool-seed-sugarcane" data-tool="seed_sugarcane" title="Swipe to plant Sugarcane">
+        <span class="tool-icon">🍭</span>
+        <span class="tool-label">Sugarcane</span>
+      </button>
+      
+      <button class="tool-btn" id="tool-feed" data-tool="feed_cow" title="Swipe over cows to feed them">
+        <span class="tool-icon">🐮🌾</span>
+        <span class="tool-label">Feed Cow</span>
+      </button>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- Shop Toggle Button -->
+      <button class="tool-btn shop" id="shop-btn" onclick="toggleShop()" title="Buy crop plots, factories, and animals">
+        <span class="tool-icon">🏗️</span>
+        <span class="tool-label">Shop</span>
+      </button>
+    </footer>
+
+  </div>
+
+  <!-- 4. FLOATING SHOP PANEL DRAWER -->
+  <aside class="shop-drawer" id="shop-drawer">
+    <div class="shop-header">
+      <h2 style="font-weight: 800; color: #2c5282;">🏗️ Town Shop</h2>
+      <button class="close-barn-btn" onclick="toggleShop()">&times;</button>
+    </div>
+    <p style="font-size: 11px; color: #718096; margin-bottom: 12px;">Click a building below, then click a clear space on the grass grid to place it.</p>
+    <div class="shop-items-grid" id="shop-items-grid">
+      <!-- Unlocked buildings populated dynamically -->
+    </div>
+  </aside>
+
+  <!-- 5. SLIDING INVENTORY BARN DRAWER -->
+  <aside class="barn-drawer" id="barn-drawer">
+    <div class="barn-header">
+      <h2 class="barn-title">📦 Barn Storage</h2>
+      <button class="close-barn-btn" onclick="toggleBarn()">&times;</button>
+    </div>
+    
+    <div class="barn-capacity-indicator" id="barn-capacity-indicator">
+      <strong>Barn Storage Capacity:</strong> 0 / 40 items
+    </div>
+    
+    <div class="barn-items-list" id="barn-items-list">
+      <!-- Items detail cards -->
+    </div>
+    
+    <div class="barn-upgrade-section">
+      <h3 class="barn-upgrade-title">🏗️ Upgrade Capacity (+20 slots)</h3>
+      <div class="upgrade-materials" id="upgrade-materials">
+        <!-- Upgrade materials levels -->
+      </div>
+      <button class="upgrade-barn-btn" id="upgrade-barn-btn" onclick="upgradeBarn()" disabled>
+        Upgrade Barn Capacity
+      </button>
+    </div>
+  </aside>
+
+  <!-- 6. HELICOPTER ORDERS BOARD MODAL -->
+  <div id="helicopter-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🚁 Helicopter Pad & Citizen Orders</h2>
+        <button class="close-menu-btn" onclick="closeHelicopterModal()">&times;</button>
+      </div>
+      <div class="orders-board" id="orders-board" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+        <!-- Citizens orders lists -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. TRAIN STATION LOGISTICS MODAL -->
+  <div id="train-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2 id="train-modal-title">🚂 Train Depot</h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button onclick="recycleTrainCrates()" class="unlock-btn" style="background:#718096; color:white; border:none; font-size:11px; padding:4px 8px; border-radius:6px;" id="train-recycle-btn" title="Refresh cargo requests">🔄 Recycle Cargo</button>
+          <button class="close-menu-btn" onclick="closeTrainModal()">&times;</button>
+        </div>
+      </div>
+      <div class="train-modal-crates-row" id="train-modal-crates-container">
+        <!-- Dynamically loaded crates -->
+      </div>
+      <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;" id="train-modal-actions">
+        <!-- Send or timer -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. SAVE AND UTILITIES NOTIFIERS -->
+  <div class="save-indicator" id="save-indicator">
+    <div class="save-spinner"></div>
+    <span>Saving Town...</span>
+  </div>
+
+  <div style="position: absolute; bottom: 90px; left: 15px; z-index: 10; display: flex; gap: 8px;">
+    <button onclick="saveGame(false)" class="unlock-btn" style="background:rgba(0,0,0,0.6); color:white; border:none; font-size:10px; padding:4px 8px;">💾 Save</button>
+    <button onclick="resetGame()" class="unlock-btn" style="background:#e53935; color:white; border:none; font-size:10px; padding:4px 8px;">⚙️ Reset Game</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
