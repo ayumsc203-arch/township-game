@@ -559,7 +559,7 @@ git push origin feature/new-feature
 
 This project is available for educational and personal use.
 
-Add your preferred license here if the project is released publicly.
+
 
 ---
 
